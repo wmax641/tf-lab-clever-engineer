@@ -21,14 +21,19 @@ resource "random_string" "cred" {
 locals {
   uniq_id        = random_string.uniq.result
   uniq_prefix    = "${var.base_name}-${random_string.uniq.result}"
-  ssm_param_path = "/${var.base_name}/${random_string.uniq.result}/cred"
+  ssm_param_path = "/${var.base_name}/${random_string.uniq.result}"
   uniq_tags      = merge({ "identifier" = "${local.uniq_prefix}" }, var.common_tags)
 }
 
 resource "aws_ssm_parameter" "cred" {
-  name  = local.ssm_param_path
+  name  = "${local.ssm_param_path}/cred"
   type  = "String"
   value = random_string.cred.result
+}
+resource "aws_ssm_parameter" "ip" {
+  name  = "${local.ssm_param_path}/ip"
+  type  = "String"
+  value = "0.0.0.0"
 }
 
 resource "aws_s3_bucket" "bucket" {
@@ -74,27 +79,6 @@ resource "aws_route_table_association" "route_association" {
   route_table_id = aws_route_table.route_table.id
 }
 
-resource "aws_security_group" "jump" {
-  name        = "${local.uniq_prefix}-sg"
-  description = "Allow SSH in"
-  vpc_id      = aws_vpc.vpc.id
-
-  ingress {
-    description = "inbound ssh"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  egress {
-    description = "outbound local"
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = [var.cidr_block]
-  }
-  tags = merge({ "Name" = "${local.uniq_prefix}-sg" }, local.uniq_tags)
-}
 
 #data "archive_file" "list" {
 #  type             = "zip"

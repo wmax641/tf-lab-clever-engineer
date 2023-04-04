@@ -65,9 +65,14 @@ data "aws_iam_policy_document" "read_ssm_param_policy_doc" {
       "ssm:GetParameter",
     ]
     resources = [
-      aws_ssm_parameter.cred.arn
+      aws_ssm_parameter.cred.arn,
+      aws_ssm_parameter.ip.arn,
     ]
   }
+  depends_on = [
+    aws_ssm_parameter.ip,
+    aws_ssm_parameter.cred,
+  ]
 }
 
 resource "aws_iam_policy" "lambda_cloudwatch_policy" {
@@ -108,4 +113,70 @@ resource "aws_iam_role" "lambda_get_logs_role" {
     aws_iam_policy.lambda_read_s3_policy.arn,
   ]
   tags = merge({ "Name" = "LambdaGetLogsRole-${local.uniq_prefix}" }, local.uniq_tags)
+}
+
+resource "aws_iam_role" "host_instance_role" {
+  name = "HostInstanceRole-${local.uniq_prefix}"
+
+  managed_policy_arns = [
+    "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
+    aws_iam_policy.read_ssm_param_policy.arn,
+  ]
+
+  inline_policy {
+    name = "HostInstancePolicy-${local.uniq_prefix}"
+
+    policy = jsonencode({
+      Version = "2012-10-17"
+      Statement = [
+        {
+          Action = [
+            "ec2:Get*",
+            "ec2:Describe*",
+          ]
+          Effect   = "Allow"
+          Sid      = ""
+          Resource = ["*"]
+        },
+        {
+          Action = [
+            "ssm:PutParameter",
+          ]
+          Effect   = "Allow"
+          Sid      = ""
+          Resource = [aws_ssm_parameter.ip.arn]
+        },
+        {
+          Action = [
+            "s3:GetObject"
+          ]
+          Effect   = "Allow"
+          Sid      = ""
+          Resource = [
+            "arn:aws:s3:::amazonlinux.${data.aws_region.current.name}.amazonaws.com/*",
+            "arn:aws:s3:::amazonlinux-2-repos-${data.aws_region.current.name}/*",
+          ]
+        },
+      ]
+    })
+  }
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Sid    = ""
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      },
+    ]
+  })
+  tags = merge({ "Name" = "HostInstanceRole-${local.uniq_prefix}" }, local.uniq_tags)
+}
+
+resource "aws_iam_instance_profile" "host_instance_profile" {
+  name = "HostInstanceProfile-${local.uniq_prefix}"
+  role = aws_iam_role.host_instance_role.name
 }

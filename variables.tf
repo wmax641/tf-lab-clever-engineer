@@ -15,3 +15,7 @@ variable "cidr_block" {
   type    = string
   default = "10.13.37.0/24"
 }
+variable "key_name" {
+  type    = string
+  default = "clueless-engineer-lab-keypair"
+}
