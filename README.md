@@ -1,7 +1,7 @@
 # Interview Lab - Clueless Engineer
 
 ## Scenario 
-A crafty engineer has a requirement to make the system logs of their app available via unauthenticated API over the public internet as that's the fastest way to deliver their project.
+A crafty engineer has a requirement to make the system logs of their app available via unauthenticated API over the public internet, as that's the fastest way to deliver their project. 
 
 As a clever Security Engineer, they know well enough to protect their app's sensitive logs by using **base64** encryption before exposing them on the internet.
 
@@ -18,4 +18,5 @@ Explain how you completed the above 2 tasks, exhibiting any code/scripts written
 
 ### Notes / Restrictions
 * The server is owned and controlled by the interviewer, you have permission to log onto it and try to secure it.
-* The server has no outbound internet connectivity, so installation of new software is not required nor expected.
+* The server has no outbound internet connectivity, so there is no need nor expection to install software
+* There is no need nor expectation to run any technical exploits or to gain privilege escalation
