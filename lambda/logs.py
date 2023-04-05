@@ -5,6 +5,8 @@ from datetime import timedelta
 import random
 import base64
 import string
+import json
+import os
 
 _LOG_LINES = 1337
 
@@ -105,6 +107,93 @@ def gen_logs(host:str, username:str, password:str, port:str) -> list[str]:
 
     return(ret)
 
+def lambda_handler(event, context):
+
+    print(event)
+
+    # Set some default values
+    logs = []
+    statusCode = 500
+    content_type = "application/json"
+    uniq_id = ""
+    ipaddr = ""
+    username = ""
+    passwd = ""
+    ret = {
+        "error":1,
+    }
+
+    # ensure key parameter exists, otherwise quick exit
+    try:
+        print(event)
+        uniq_id = event["queryStringParameters"]["key"]
+
+        print(uniq_id)
+
+        if len(uniq_id) < 5 or len(uniq_id) > 30:
+            raise(KeyError)
+
+    except (KeyError, TypeError) as e:
+        ret["error_msg"] = "No or invalid 'key' parameter provided - " + str(e)
+        return {
+            'statusCode': 400,
+            'headers':{"Content-Type": "application/json"},
+            'body': json.dumps(ret, indent=3)
+        }
+    except Exception as e:
+        ret["error_msg"] = "Unhandled server side error: {}".format(str(e))
+        return {
+            'statusCode': 500,
+            'headers':{"Content-Type": "application/json"},
+            'body': json.dumps(ret, indent=3)
+        }
+
+    
+    try:
+        # Pull values out of SSM param store
+        ssm = boto3.client('ssm')
+
+        base_param = "{}/{}".format(os.environ['base_param_path'], uniq_id)
+
+        ipaddr = ssm.get_parameter(Name="{}/ip".format(base_param))["Parameter"]["Value"]
+        username = ssm.get_parameter(Name="{}/username".format(base_param))["Parameter"]["Value"]
+        passwd = ssm.get_parameter(Name="{}/cred".format(base_param))["Parameter"]["Value"]
+
+        # Finally generate the logs
+        logs = gen_logs(host=ipaddr, username=username, password=passwd, port="22")
+        ret["error"] = 0
+
+    except (KeyError, ssm.exceptions.ParameterNotFound) as e:
+        ret["error_msg"] = "Invalid provided key: {}".format(uniq_id)
+        return {
+            'statusCode': 400,
+            'headers':{"Content-Type": "application/json"},
+            'body': json.dumps(ret, indent=3)
+        }
+    except Exception as e:
+        ret["error_msg"] = "Unhandled server side error: {}".format(str(e))
+        return {
+            'statusCode': 500,
+            'headers':{"Content-Type": "application/json"},
+            'body': json.dumps(ret, indent=3)
+        }
+
+    # change to txt output if requested. This only works if the statusCode is already 200
+    if ("txt" in event["queryStringParameters"]):
+
+        content_type = "text/plain"
+        body = "\n".join(logs) 
+
+    # otherwise, default json
+    else:
+        ret["logs"] = logs
+        body = json.dumps(ret, indent=3) 
+
+    return {
+        'statusCode': 200,
+        'headers':{"Content-Type": content_type},
+        'body': body
+    }
 
 if __name__ == "__main__":
     passwd = "".join(random.choice(string.ascii_letters) for i in range(16))

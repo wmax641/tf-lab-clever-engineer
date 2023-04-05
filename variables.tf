@@ -4,7 +4,7 @@ variable "base_name" {
 }
 variable "common_tags" {
   default = {
-    "Project" = "tf-lab-clueless-engineer"
+    "project" = "tf-lab-clueless-engineer"
   }
 }
 variable "username" {
@@ -14,8 +14,4 @@ variable "username" {
 variable "cidr_block" {
   type    = string
   default = "10.13.37.0/24"
-}
-variable "key_name" {
-  type    = string
-  default = "clueless-engineer-lab-keypair"
 }

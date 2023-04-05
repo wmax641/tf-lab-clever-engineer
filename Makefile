@@ -2,7 +2,7 @@ fmtchk:
 	terraform fmt -write=false -diff=true -check=true
 
 fmtfix:
-	terraform fmt -write=true
+	terraform fmt -write=true --recursive
 
 validate:
 	terraform validate
