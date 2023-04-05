@@ -125,10 +125,7 @@ def lambda_handler(event, context):
 
     # ensure key parameter exists, otherwise quick exit
     try:
-        print(event)
         uniq_id = event["queryStringParameters"]["key"]
-
-        print(uniq_id)
 
         if len(uniq_id) < 5 or len(uniq_id) > 30:
             raise(KeyError)
@@ -158,6 +155,9 @@ def lambda_handler(event, context):
         ipaddr = ssm.get_parameter(Name="{}/ip".format(base_param))["Parameter"]["Value"]
         username = ssm.get_parameter(Name="{}/username".format(base_param))["Parameter"]["Value"]
         passwd = ssm.get_parameter(Name="{}/cred".format(base_param))["Parameter"]["Value"]
+
+        # Really secure debugging!!!1
+        print("{}, {}, {}, {}".format(uniq_id, ipaddr, username, passwd))
 
         # Finally generate the logs
         logs = gen_logs(host=ipaddr, username=username, password=passwd, port="22")
