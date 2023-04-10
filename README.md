@@ -1,22 +1,21 @@
 # Interview Lab - Clueless Engineer
 
 ## Scenario 
-A crafty engineer has a requirement to make the system logs of their app available via unauthenticated API over the public internet, as that's the fastest way to deliver their project. 
+A clever Security Engineer knows well enough to protect sensitive data in their logs by using **base64** encryption. Due to tight deadlines for delivery, they've published the system logs of their app via an unauthenticated API on the public internet - as that was the fastest solution.
 
-As a clever Security Engineer, they know well enough to protect their app's sensitive logs by using **base64** encryption before exposing them on the internet.
-
-You are an even more clever Security Engineer who has stumbled on these protected logs, and has found a credential leakage issue. You've decided to help out by taking over the administration of the exposed server to <s>use it for your own purpose</s> help prevent abuse by other would-be crafty <s>hackers</s> security researchers.
+You are an even more clever Security Engineer who has stumbled on these protected logs, and has noticed a credential leakage issue. You've decided to help out by taking over the administration of the exposed server to help prevent abuse by <s>other</s> would-be crafty cackers.
 
 ## Task
 
 You will be given the API endpoint to request the logs
 
-* Find the exposed password and host details from the logs
-* Take control over the exposed **Linux** server, and lock down access 
+* Find the exposed "**password**" and host details from the logs
+* Take control over the exposed **Linux** server, and lock down **user access**
 
 Explain how you completed the above 2 tasks, exhibiting any code/scripts written.
 
 ### Notes / Restrictions
 * The server is owned and controlled by the interviewer, you have permission to log onto it and try to secure it.
-* The server has no outbound internet connectivity, so there is no need nor expection to install software
-* There is no need nor expectation to run any technical exploits or to gain privilege escalation
+* There is no need nor expection to install software as the server has no internet connectivity
+* There is no need nor expectation to execute technical exploits or run malware
+* There is no need nor expectation to use any AWS services

@@ -84,13 +84,14 @@ def gen_logs(host:str, username:str, password:str, port:str) -> list[str]:
         if i == line_number_with_leak:
             proc = "ssh"
             header_msg = "[{}] {}[{}]:".format(dt_str, proc, proc_id)
-
-            msg = random.choice([
+            salt = gen_random_str(2,3)
+            cred_leak_msg = random.choice([
               "Connected to {}@{}:{} with password {}".format(username,host,port,password),
               "Authenticated to {}@{}:{} with password {}".format(username,host,port,password),
               "Connected with password {} to {}@{}:{}".format(password,username,host,port),
               "Authenticated to {}@{} password {} port {}".format(username,host,password,port),
             ])
+            msg = "{} {}".format(salt, cred_leak_msg)
             b64_msg = base64.b64encode(msg.encode("ascii")).decode("ascii")
             ret.append("{:37}{}".format(header_msg, b64_msg))
 
@@ -131,7 +132,7 @@ def lambda_handler(event, context):
             raise(KeyError)
 
     except (KeyError, TypeError) as e:
-        ret["error_msg"] = "No or invalid 'key' parameter provided - " + str(e)
+        ret["error_msg"] = "No or invalid 'key' parameter provided - "
         return {
             'statusCode': 400,
             'headers':{"Content-Type": "application/json"},

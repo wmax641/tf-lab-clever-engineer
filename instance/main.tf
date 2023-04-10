@@ -31,8 +31,7 @@ locals {
     {
       "uniq_id"     = local.uniq_id,
       "uniq_prefix" = local.uniq_prefix
-    },
-  var.common_tags)
+  }, var.common_tags)
 }
 
 data "aws_vpc" "vpc" {

@@ -11,3 +11,7 @@ variable "subnet_id" {
 }
 variable "common_tags" {
 }
+variable "sg_id" {
+  type        = string
+  description = "aws_security_group.id of the security group"
+}

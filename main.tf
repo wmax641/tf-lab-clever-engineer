@@ -22,12 +22,13 @@ terraform {
   }
 }
 
-module "victim_server" {
-  source = "./victim_server"
+module "lab_instance" {
+  source = "./instance"
   count  = 2
 
   base_name   = var.base_name
   vpc_id      = aws_vpc.vpc.id
   subnet_id   = aws_subnet.subnet.id
   common_tags = var.common_tags
+  sg_id       = aws_security_group.instance_sg.id
 }

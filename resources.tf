@@ -25,6 +25,35 @@ resource "aws_subnet" "subnet" {
   tags                    = merge({ "Name" = "${var.base_name}-subnet" }, var.common_tags)
 }
 
+resource "aws_security_group" "instance_sg" {
+  name        = "${var.base_name}-sg"
+  description = "Allow SSH in"
+  vpc_id      = aws_vpc.vpc.id
+
+  ingress {
+    description = "inbound ssh"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  egress {
+    description = "outbound local"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = [var.cidr_block]
+  }
+  #egress {
+  #  description = "outbound everywhere"
+  #  from_port   = 0
+  #  to_port     = 0
+  #  protocol    = "-1"
+  #  cidr_blocks = ["0.0.0.0/0"]
+  #}
+  tags = merge({ "Name" = "${var.base_name}-sg" }, var.common_tags)
+}
+
 resource "aws_route_table" "route_table" {
   vpc_id = aws_vpc.vpc.id
   route {
@@ -115,6 +144,16 @@ resource "aws_lambda_permission" "lambda_permission_logs" {
   principal     = "apigateway.amazonaws.com"
 
   source_arn = "${aws_apigatewayv2_api.api_gateway.execution_arn}/*"
+}
+
+resource "aws_vpc_endpoint" "ssm_messages" {
+  vpc_id       = aws_vpc.vpc.id
+  service_name = "com.amazonaws.${data.aws_region.current.name}.ssmmessages"
+  dns_options {
+    dns_record_ip_type = "ipv4"
+  }
+  vpc_endpoint_type = "Interface"
+  tags              = merge({ "Name" = "${var.base_name}-ssm-messages-endpoint" }, var.common_tags)
 }
 
 #resource "aws_lambda_permission" "lambda_permission_upload_link" {

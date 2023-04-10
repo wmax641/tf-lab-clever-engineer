@@ -16,3 +16,5 @@ resource "aws_ssm_parameter" "ip" {
   value = "1.3.3.7"
   tags  = local.tags
 }
+
+
