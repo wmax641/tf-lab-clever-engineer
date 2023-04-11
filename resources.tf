@@ -17,12 +17,39 @@ resource "aws_internet_gateway" "igw" {
   tags   = merge({ "Name" = "${var.base_name}-igw" }, var.common_tags)
 }
 
-resource "aws_subnet" "subnet" {
+resource "aws_subnet" "subnet_public" {
   vpc_id                  = aws_vpc.vpc.id
   availability_zone       = data.aws_availability_zones.available.names[0]
   map_public_ip_on_launch = true
-  cidr_block              = var.cidr_block
-  tags                    = merge({ "Name" = "${var.base_name}-subnet" }, var.common_tags)
+  cidr_block              = cidrsubnet(aws_vpc.vpc.cidr_block, 1, 0)
+  tags                    = merge({ "Name" = "${var.base_name}-public-subnet" }, var.common_tags)
+}
+resource "aws_subnet" "subnet_private" {
+  vpc_id            = aws_vpc.vpc.id
+  availability_zone = data.aws_availability_zones.available.names[0]
+  cidr_block        = cidrsubnet(aws_vpc.vpc.cidr_block, 1, 1)
+  tags              = merge({ "Name" = "${var.base_name}-private_subnet" }, var.common_tags)
+}
+
+resource "aws_security_group" "vpc_endpoint_sg" {
+  name   = "${var.base_name}-vpc_endpoint-sg"
+  vpc_id = aws_vpc.vpc.id
+
+  ingress {
+    description = "inbound local"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = [var.cidr_block]
+  }
+  egress {
+    description = "outbound local"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = [var.cidr_block]
+  }
+  tags = merge({ "Name" = "${var.base_name}-vpc_endpoint-sg" }, var.common_tags)
 }
 
 resource "aws_security_group" "instance_sg" {
@@ -34,6 +61,27 @@ resource "aws_security_group" "instance_sg" {
     description = "inbound ssh"
     from_port   = 22
     to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    description = "inbound http"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    description = "inbound https"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
+    description = "inbound 1337"
+    from_port   = 1337
+    to_port     = 1337
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -63,8 +111,12 @@ resource "aws_route_table" "route_table" {
   tags = merge({ "Name" = "${var.base_name}-route-table" }, var.common_tags)
 }
 
-resource "aws_route_table_association" "route_association" {
-  subnet_id      = aws_subnet.subnet.id
+resource "aws_route_table_association" "route_association_public" {
+  subnet_id      = aws_subnet.subnet_public.id
+  route_table_id = aws_route_table.route_table.id
+}
+resource "aws_route_table_association" "route_association_private" {
+  subnet_id      = aws_subnet.subnet_private.id
   route_table_id = aws_route_table.route_table.id
 }
 
@@ -146,30 +198,39 @@ resource "aws_lambda_permission" "lambda_permission_logs" {
   source_arn = "${aws_apigatewayv2_api.api_gateway.execution_arn}/*"
 }
 
-resource "aws_vpc_endpoint" "ssm_messages" {
+resource "aws_vpc_endpoint" "ssm" {
+  vpc_id       = aws_vpc.vpc.id
+  service_name = "com.amazonaws.${data.aws_region.current.name}.ssm"
+  dns_options {
+    dns_record_ip_type = "ipv4"
+  }
+  private_dns_enabled = true
+  security_group_ids = [aws_security_group.vpc_endpoint_sg.id]
+  subnet_ids          = [aws_subnet.subnet_public.id]
+  vpc_endpoint_type = "Interface"
+  tags              = merge({ "Name" = "${var.base_name}-ssm" }, var.common_tags)
+}
+resource "aws_vpc_endpoint" "ssmmesssages" {
   vpc_id       = aws_vpc.vpc.id
   service_name = "com.amazonaws.${data.aws_region.current.name}.ssmmessages"
   dns_options {
     dns_record_ip_type = "ipv4"
   }
+  private_dns_enabled = true
+  security_group_ids = [aws_security_group.vpc_endpoint_sg.id]
+  subnet_ids          = [aws_subnet.subnet_public.id]
   vpc_endpoint_type = "Interface"
-  tags              = merge({ "Name" = "${var.base_name}-ssm-messages-endpoint" }, var.common_tags)
+  tags              = merge({ "Name" = "${var.base_name}-ssmmessages" }, var.common_tags)
 }
-
-#resource "aws_lambda_permission" "lambda_permission_upload_link" {
-#  statement_id  = "allow_api_gateway"
-#  action        = "lambda:InvokeFunction"
-#  function_name = aws_lambda_function.upload_link.function_name
-#  principal     = "apigateway.amazonaws.com"
-#
-#  source_arn = "${aws_apigatewayv2_api.api_gateway.execution_arn}/*"
-#}
-
-#resource "aws_s3_bucket" "bucket" {
-#  bucket = local.uniq_prefix
-#  tags   = merge({ "Name" = "${local.uniq_prefix}" }, local.uniq_tags)
-#}
-#resource "aws_s3_bucket_acl" "bucket_acl" {
-#  acl    = "private"
-#  bucket = aws_s3_bucket.bucket.id
-#}
+resource "aws_vpc_endpoint" "ec2" {
+  vpc_id       = aws_vpc.vpc.id
+  service_name = "com.amazonaws.${data.aws_region.current.name}.ec2"
+  dns_options {
+    dns_record_ip_type = "ipv4"
+  }
+  private_dns_enabled = true
+  security_group_ids = [aws_security_group.vpc_endpoint_sg.id]
+  subnet_ids          = [aws_subnet.subnet_public.id]
+  vpc_endpoint_type = "Interface"
+  tags              = merge({ "Name" = "${var.base_name}-ec2" }, var.common_tags)
+}

@@ -2,7 +2,7 @@ resource "aws_iam_role" "lab_instance_role" {
   name = "${local.uniq_prefix}-InstanceRole"
 
   managed_policy_arns = [
-    "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
+    "arn:aws:iam::aws:policy/AmazonSSMManagedEC2InstanceDefaultPolicy",
   ]
 
   inline_policy {
@@ -31,6 +31,17 @@ resource "aws_iam_role" "lab_instance_role" {
             "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter${local.ssm_param_path}/ip"
           ]
         },
+        {
+          Action = [
+          #    "ec2:DescribeInstances",
+              "ec2:ReportInstanceStatus",
+          ]
+          Effect = "Allow"
+          Sid    = "EC2Actions${local.uniq_id}"
+          Resource = [
+            "*"
+          ]
+        },
       ]
     })
   }
@@ -48,4 +59,8 @@ resource "aws_iam_role" "lab_instance_role" {
     ]
   })
   tags = merge({ "Name" = "${local.uniq_prefix}-InstanceRole" }, local.tags)
+}
+resource "aws_iam_instance_profile" "lab_instance_profile" {
+  name = "${local.uniq_prefix}-InstanceProfile"
+  role = aws_iam_role.lab_instance_role.name
 }

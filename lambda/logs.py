@@ -151,7 +151,7 @@ def lambda_handler(event, context):
         # Pull values out of SSM param store
         ssm = boto3.client('ssm')
 
-        base_param = "{}/{}".format(os.environ['base_param_path'], uniq_id)
+        base_param = "{}-{}".format(os.environ['base_param_path'], uniq_id)
 
         ipaddr = ssm.get_parameter(Name="{}/ip".format(base_param))["Parameter"]["Value"]
         username = ssm.get_parameter(Name="{}/username".format(base_param))["Parameter"]["Value"]

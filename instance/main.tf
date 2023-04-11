@@ -10,8 +10,8 @@ resource "random_string" "uniq" {
   special = false
 }
 resource "random_integer" "user_num" {
-  min = 0
-  max = 9
+  min = 10 
+  max = 99
 }
 
 resource "random_string" "cred" {
@@ -26,7 +26,7 @@ resource "random_string" "cred" {
 locals {
   uniq_id        = random_string.uniq.result
   uniq_prefix    = "${var.base_name}-${random_string.uniq.result}"
-  ssm_param_path = "/${var.base_name}/${random_string.uniq.result}"
+  ssm_param_path = "/${var.base_name}-${random_string.uniq.result}"
   tags = merge(
     {
       "uniq_id"     = local.uniq_id,
