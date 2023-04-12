@@ -41,11 +41,11 @@ resource "aws_launch_template" "lab_instance" {
 }
 
 resource "aws_autoscaling_group" "lab_instance_asg" {
-  name = local.uniq_prefix
+  name                = local.uniq_prefix
   vpc_zone_identifier = [var.subnet_id]
-  desired_capacity   = 1
-  max_size           = 1
-  min_size           = 1
+  desired_capacity    = 1
+  max_size            = 1
+  min_size            = 1
 
   launch_template {
     id      = aws_launch_template.lab_instance.id

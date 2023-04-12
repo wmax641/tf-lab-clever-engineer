@@ -4,6 +4,7 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
+# # # # # VPC # # # # #
 
 resource "aws_vpc" "vpc" {
   cidr_block           = var.cidr_block
@@ -120,24 +121,29 @@ resource "aws_route_table_association" "route_association_private" {
   route_table_id = aws_route_table.route_table.id
 }
 
+# # # # # LAMBDA # # # # #
+
 data "archive_file" "logs_lambda" {
   type             = "zip"
   source_file      = "${path.module}/lambda/logs.py"
   output_file_mode = "0666"
   output_path      = "${path.module}/lambda/logs.py.zip"
 }
+data "archive_file" "server_lambda" {
+  type             = "zip"
+  source_file      = "${path.module}/lambda/server.py"
+  output_file_mode = "0666"
+  output_path      = "${path.module}/lambda/server.py.zip"
+}
 
 resource "aws_lambda_function" "logs" {
-  filename      = data.archive_file.logs_lambda.output_path
-  function_name = "${var.base_name}-logs-lambda"
-  role          = aws_iam_role.lambda_logs_role.arn
-  handler       = "logs.lambda_handler"
-  timeout       = 4
-
+  filename         = data.archive_file.logs_lambda.output_path
+  function_name    = "${var.base_name}-logs-lambda"
+  role             = aws_iam_role.lambda_logs_role.arn
+  handler          = "logs.lambda_handler"
+  timeout          = 4
   source_code_hash = filebase64sha256(data.archive_file.logs_lambda.output_path)
-
-  runtime = "python3.9"
-
+  runtime          = "python3.9"
   environment {
     variables = {
       base_param_path = "/${var.base_name}"
@@ -145,6 +151,24 @@ resource "aws_lambda_function" "logs" {
   }
   tags = merge({ "Name" = "${var.base_name}-logs-lambda" }, var.common_tags)
 }
+
+resource "aws_lambda_function" "server" {
+  filename         = data.archive_file.server_lambda.output_path
+  function_name    = "${var.base_name}-server-lambda"
+  role             = aws_iam_role.lambda_server_role.arn
+  handler          = "server.lambda_handler"
+  timeout          = 4
+  source_code_hash = filebase64sha256(data.archive_file.server_lambda.output_path)
+  runtime          = "python3.9"
+  environment {
+    variables = {
+      base_param_path = "/${var.base_name}"
+    }
+  }
+  tags = merge({ "Name" = "${var.base_name}-server-lambda" }, var.common_tags)
+}
+
+# # # # # API GATEWAY # # # # #
 
 resource "aws_apigatewayv2_api" "api_gateway" {
   name          = "${var.base_name}-api-gateway"
@@ -158,6 +182,12 @@ resource "aws_apigatewayv2_route" "logs" {
 
   target = "integrations/${aws_apigatewayv2_integration.logs.id}"
 }
+resource "aws_apigatewayv2_route" "server" {
+  api_id    = aws_apigatewayv2_api.api_gateway.id
+  route_key = "DELETE /server"
+
+  target = "integrations/${aws_apigatewayv2_integration.server.id}"
+}
 
 resource "aws_apigatewayv2_integration" "logs" {
   api_id           = aws_apigatewayv2_api.api_gateway.id
@@ -167,6 +197,16 @@ resource "aws_apigatewayv2_integration" "logs" {
   description          = "GET logs Lambda"
   integration_method   = "POST"
   integration_uri      = aws_lambda_function.logs.invoke_arn
+  passthrough_behavior = "WHEN_NO_MATCH"
+}
+resource "aws_apigatewayv2_integration" "server" {
+  api_id           = aws_apigatewayv2_api.api_gateway.id
+  integration_type = "AWS_PROXY"
+
+  connection_type      = "INTERNET"
+  description          = "DELETE server Lambda"
+  integration_method   = "POST"
+  integration_uri      = aws_lambda_function.server.invoke_arn
   passthrough_behavior = "WHEN_NO_MATCH"
 }
 
@@ -181,7 +221,6 @@ resource "aws_apigatewayv2_deployment" "deployment" {
     aws_apigatewayv2_route.logs,
   ]
 }
-
 resource "aws_apigatewayv2_stage" "v1" {
   api_id        = aws_apigatewayv2_api.api_gateway.id
   name          = "v1"
@@ -197,8 +236,21 @@ resource "aws_lambda_permission" "lambda_permission_logs" {
 
   source_arn = "${aws_apigatewayv2_api.api_gateway.execution_arn}/*"
 }
+resource "aws_lambda_permission" "lambda_permission_server" {
+  statement_id  = "allow_api_gateway"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.server.function_name
+  principal     = "apigateway.amazonaws.com"
+
+  source_arn = "${aws_apigatewayv2_api.api_gateway.execution_arn}/*"
+}
+
+# # # # # VPC ENDPOINTS # # # # #
+# These endpoints all have a count attribute. If var.instance_count is 0, then these endpoints
+# won't be created to save money
 
 resource "aws_vpc_endpoint" "ssm" {
+  count        = var.instance_count > 0 ? 1 : 0
   vpc_id       = aws_vpc.vpc.id
   service_name = "com.amazonaws.${data.aws_region.current.name}.ssm"
   dns_options {
@@ -211,6 +263,7 @@ resource "aws_vpc_endpoint" "ssm" {
   tags                = merge({ "Name" = "${var.base_name}-ssm" }, var.common_tags)
 }
 resource "aws_vpc_endpoint" "ssmmesssages" {
+  count        = var.instance_count > 0 ? 1 : 0
   vpc_id       = aws_vpc.vpc.id
   service_name = "com.amazonaws.${data.aws_region.current.name}.ssmmessages"
   dns_options {
@@ -223,6 +276,7 @@ resource "aws_vpc_endpoint" "ssmmesssages" {
   tags                = merge({ "Name" = "${var.base_name}-ssmmessages" }, var.common_tags)
 }
 resource "aws_vpc_endpoint" "ec2" {
+  count        = var.instance_count > 0 ? 1 : 0
   vpc_id       = aws_vpc.vpc.id
   service_name = "com.amazonaws.${data.aws_region.current.name}.ec2"
   dns_options {
@@ -233,4 +287,14 @@ resource "aws_vpc_endpoint" "ec2" {
   subnet_ids          = [aws_subnet.subnet_public.id]
   vpc_endpoint_type   = "Interface"
   tags                = merge({ "Name" = "${var.base_name}-ec2" }, var.common_tags)
+}
+
+
+# # # # # PARAMETERS # # # # #
+
+resource "aws_ssm_parameter" "key" {
+  name  = "${var.base_name}-key"
+  type  = "String"
+  value = var.key
+  tags  = var.common_tags
 }

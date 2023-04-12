@@ -16,5 +16,9 @@ resource "aws_ssm_parameter" "ip" {
   value = "1.3.3.7"
   tags  = local.tags
 }
-
-
+resource "aws_ssm_parameter" "terminated_datetime" {
+  name  = "${local.ssm_param_path}/terminated-datetime"
+  type  = "String"
+  value = "13333337"
+  tags  = local.tags
+}

@@ -45,6 +45,42 @@ data "aws_iam_policy_document" "read_all_ssm_param_policy_doc" {
   }
 }
 
+data "aws_iam_policy_document" "terminate_instance_ec2_policy_doc" {
+  statement {
+    sid = "DescribeInstanceEC2For${local.sid_suffix}"
+    actions = [
+      "ec2:DescribeInstances",
+    ]
+    resources = [
+      "*"
+    ]
+  }
+  statement {
+    sid = "TerminateInstanceEC2For${local.sid_suffix}"
+    actions = [
+      "ec2:TerminateInstances",
+    ]
+    resources = [
+      "arn:aws:ec2:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:instance/*"
+    ]
+    condition {
+      test     = "StringLike"
+      variable = "aws:ResourceTag/uniq_prefix"
+      values   = ["${var.base_name}-*"]
+    }
+  }
+  statement {
+    sid = "TerminateInstanceSSMFor${local.sid_suffix}"
+    actions = [
+      "ssm:GetParameter",
+      "ssm:PutParameter",
+    ]
+    resources = [
+      "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/${var.base_name}-*"
+    ]
+  }
+}
+
 resource "aws_iam_policy" "read_all_ssm_param_policy" {
   name   = "${var.base_name}-read_all_ssm_param_policy"
   policy = data.aws_iam_policy_document.read_all_ssm_param_policy_doc.json
@@ -52,6 +88,10 @@ resource "aws_iam_policy" "read_all_ssm_param_policy" {
 resource "aws_iam_policy" "lambda_cloudwatch_policy" {
   name   = "${var.base_name}-lambda_cloudwatch_policy"
   policy = data.aws_iam_policy_document.lambda_cloudwatch_policy_doc.json
+}
+resource "aws_iam_policy" "terminate_instance_ec2_policy" {
+  name   = "${var.base_name}-termiante-instance-ec2-policy"
+  policy = data.aws_iam_policy_document.terminate_instance_ec2_policy_doc.json
 }
 
 resource "aws_iam_role" "lambda_logs_role" {
@@ -65,155 +105,13 @@ resource "aws_iam_role" "lambda_logs_role" {
   tags = merge({ "Name" = "${var.base_name}-LambdaLogsRole" }, var.common_tags)
 }
 
-#data "aws_iam_policy_document" "lambda_cloudwatch_policy_doc" {
-#  statement {
-#    sid     = "CreateCloudWatchLogGroup${local.uniq_id}"
-#    actions = ["logs:CreateLogGroup"]
-#    resources = [
-#      "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:*"
-#    ]
-#  }
-#  statement {
-#    sid = "PutCloudwatchLogs${local.uniq_id}"
-#    actions = [
-#      "logs:CreateLogStream",
-#      "logs:PutLogEvents"
-#    ]
-#    resources = [
-#      "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/*"
-#    ]
-#  }
-#}
-#
-#data "aws_iam_policy_document" "lambda_write_s3_policy_doc" {
-#  statement {
-#    sid = "Write2S3${local.uniq_id}"
-#    actions = [
-#      "s3:GetObject",
-#      "s3:ListBucket",
-#      "s3:PutObject",
-#      "s3:DeleteObject",
-#    ]
-#    resources = [
-#      aws_s3_bucket.bucket.arn,
-#      "${aws_s3_bucket.bucket.arn}/*"
-#    ]
-#  }
-#}
-#
-#data "aws_iam_policy_document" "lambda_read_s3_policy_doc" {
-#  statement {
-#    sid = "Write2S3${local.uniq_id}"
-#    actions = [
-#      "s3:GetObject",
-#      "s3:ListBucket",
-#    ]
-#    resources = [
-#      aws_s3_bucket.bucket.arn,
-#      "${aws_s3_bucket.bucket.arn}/*"
-#    ]
-#  }
-#}
-#
-#
-#resource "aws_iam_policy" "lambda_cloudwatch_policy" {
-#  name   = "${local.uniq_prefix}-lambda_cloudwatch_policy"
-#  policy = data.aws_iam_policy_document.lambda_cloudwatch_policy_doc.json
-#}
-#resource "aws_iam_policy" "lambda_write_s3_policy" {
-#  name   = "${local.uniq_prefix}-write_s3_policy"
-#  policy = data.aws_iam_policy_document.lambda_write_s3_policy_doc.json
-#}
-#resource "aws_iam_policy" "lambda_read_s3_policy" {
-#  name   = "${local.uniq_prefix}-read_s3_policy"
-#  policy = data.aws_iam_policy_document.lambda_read_s3_policy_doc.json
-#}
-#
-#resource "aws_iam_role" "lambda_generate_s3_role" {
-#  name               = "LambdaGenerateS3Role-${local.uniq_prefix}"
-#  path               = "/service/"
-#  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role_policy_doc.json
-#  managed_policy_arns = [
-#    aws_iam_policy.lambda_cloudwatch_policy.arn,
-#    aws_iam_policy.lambda_write_s3_policy.arn,
-#    aws_iam_policy.read_ssm_param_policy.arn,
-#  ]
-#  tags = merge({ "Name" = "LambdaGenerateS3Role-${local.uniq_prefix}" }, local.uniq_tags)
-#}
-#
-#resource "aws_iam_role" "lambda_get_logs_role" {
-#  name               = "LambdaGetLogsRole-${local.uniq_prefix}"
-#  path               = "/service/"
-#  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role_policy_doc.json
-#  managed_policy_arns = [
-#    aws_iam_policy.lambda_cloudwatch_policy.arn,
-#    aws_iam_policy.lambda_read_s3_policy.arn,
-#  ]
-#  tags = merge({ "Name" = "LambdaGetLogsRole-${local.uniq_prefix}" }, local.uniq_tags)
-#}
-#
-#resource "aws_iam_role" "host_instance_role" {
-#  name = "HostInstanceRole-${local.uniq_prefix}"
-#
-#  managed_policy_arns = [
-#    "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
-#    aws_iam_policy.read_ssm_param_policy.arn,
-#  ]
-#
-#  inline_policy {
-#    name = "HostInstancePolicy-${local.uniq_prefix}"
-#
-#    policy = jsonencode({
-#      Version = "2012-10-17"
-#      Statement = [
-#        {
-#          Action = [
-#            "ec2:Get*",
-#            "ec2:Describe*",
-#          ]
-#          Effect   = "Allow"
-#          Sid      = ""
-#          Resource = ["*"]
-#        },
-#        {
-#          Action = [
-#            "ssm:PutParameter",
-#          ]
-#          Effect   = "Allow"
-#          Sid      = ""
-#          Resource = [aws_ssm_parameter.ip.arn]
-#        },
-#        {
-#          Action = [
-#            "s3:GetObject"
-#          ]
-#          Effect = "Allow"
-#          Sid    = ""
-#          Resource = [
-#            "arn:aws:s3:::amazonlinux.${data.aws_region.current.name}.amazonaws.com/*",
-#            "arn:aws:s3:::amazonlinux-2-repos-${data.aws_region.current.name}/*",
-#          ]
-#        },
-#      ]
-#    })
-#  }
-#  assume_role_policy = jsonencode({
-#    Version = "2012-10-17"
-#    Statement = [
-#      {
-#        Action = "sts:AssumeRole"
-#        Effect = "Allow"
-#        Sid    = ""
-#        Principal = {
-#          Service = "ec2.amazonaws.com"
-#        }
-#      },
-#    ]
-#  })
-#  tags = merge({ "Name" = "HostInstanceRole-${local.uniq_prefix}" }, local.uniq_tags)
-#}
-#
-#resource "aws_iam_instance_profile" "host_instance_profile" {
-#  name = "HostInstanceProfile-${local.uniq_prefix}"
-#  role = aws_iam_role.host_instance_role.name
-#}
+resource "aws_iam_role" "lambda_server_role" {
+  name               = "${var.base_name}-LambdaTerminateInstanceRole"
+  path               = "/service/"
+  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role_policy_doc.json
+  managed_policy_arns = [
+    aws_iam_policy.terminate_instance_ec2_policy.arn,
+    aws_iam_policy.lambda_cloudwatch_policy.arn,
+  ]
+  tags = merge({ "Name" = "${var.base_name}-LambdaTerminateInstancesRole" }, var.common_tags)
+}

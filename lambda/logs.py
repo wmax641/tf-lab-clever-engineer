@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+# Lambda funciton to generate random logs given the appropriate [id] param
+#
+
 import boto3
 from datetime import datetime
 from datetime import timedelta
@@ -83,26 +86,23 @@ def gen_logs(host:str, username:str, password:str, port:str) -> list[str]:
         # This is the password leak. It only occurs once
         if i == line_number_with_leak:
             proc = "ssh"
-            header_msg = "[{}] {}[{}]:".format(dt_str, proc, proc_id)
             salt = gen_random_str(2,3)
             cred_leak_msg = random.choice([
-              "Connected to {}@{}:{} with password {}".format(username,host,port,password),
-              "Authenticated to {}@{}:{} with password {}".format(username,host,port,password),
-              "Connected with password {} to {}@{}:{}".format(password,username,host,port),
-              "Authenticated to {}@{} password {} port {}".format(username,host,password,port),
+             "Connected to {}@{}:{} with password {}".format(username,host,port,password),
+             "Authenticated to {}@{}:{} with password {}".format(username,host,port,password),
+             "Connected with password {} to {}@{}:{}".format(password,username,host,port),
+             "Authenticated to {}@{} password {} port {}".format(username,host,password,port),
             ])
             msg = "{} {}".format(salt, cred_leak_msg)
-            b64_msg = base64.b64encode(msg.encode("ascii")).decode("ascii")
-            ret.append("{:37}{}".format(header_msg, b64_msg))
 
         # Generic log message
         else:
             proc = random.choice(list(_GENERATE_LOG_FOR.keys()))
-            header_msg = "[{}] {}[{}]:".format(dt_str, proc, proc_id)
-            
             msg = _GENERATE_LOG_FOR[proc]()
-            b64_msg = base64.b64encode(msg.encode("ascii")).decode("ascii")
-            ret.append("{:37}{}".format(header_msg, b64_msg))
+        
+        header_msg = "[{}] {}[{}]:".format(dt_str, proc, proc_id)
+        b64_msg = base64.b64encode(msg.encode("ascii")).decode("ascii")
+        ret.append("{:37}{}".format(header_msg, b64_msg))
 
         dt0 += timedelta(seconds=random.randint(1, 120))
 
@@ -121,24 +121,28 @@ def lambda_handler(event, context):
     username = ""
     passwd = ""
     ret = {
-        "error":1,
+        "error":True,
+        "id":""
     }
 
-    # ensure key parameter exists, otherwise quick exit
+    # ensure id parameter exists, otherwise quick exit
     try:
-        uniq_id = event["queryStringParameters"]["key"]
-
+        uniq_id = event["queryStringParameters"]["id"]
+        print('PARAMETER["id"] = {}'.format(uniq_id[:50]))
         if len(uniq_id) < 5 or len(uniq_id) > 30:
             raise(KeyError)
+        ret["id"] = uniq_id
 
     except (KeyError, TypeError) as e:
-        ret["error_msg"] = "No or invalid 'key' parameter provided - "
+        print("KeyError exception while reading 'id' param - {}".format(str(e)))
+        ret["error_msg"] = "No or invalid 'id' parameter provided"
         return {
             'statusCode': 400,
             'headers':{"Content-Type": "application/json"},
             'body': json.dumps(ret, indent=3)
         }
     except Exception as e:
+        print("Unhandled exception while reading 'id' param - {}".format(str(e)))
         ret["error_msg"] = "Unhandled server side error: {}".format(str(e))
         return {
             'statusCode': 500,
@@ -162,16 +166,18 @@ def lambda_handler(event, context):
 
         # Finally generate the logs
         logs = gen_logs(host=ipaddr, username=username, password=passwd, port="22")
-        ret["error"] = 0
+        ret["error"] = False
 
     except (KeyError, ssm.exceptions.ParameterNotFound) as e:
-        ret["error_msg"] = "Invalid provided key: {}".format(uniq_id)
+        print("Key Error exception while generating logs - {}".format(str(e)))
+        ret["error_msg"] = "Invalid id parameter provided"
         return {
             'statusCode': 400,
             'headers':{"Content-Type": "application/json"},
             'body': json.dumps(ret, indent=3)
         }
     except Exception as e:
+        print("Unhandled exception while generating logs - {}".format(str(e)))
         ret["error_msg"] = "Unhandled server side error: {}".format(str(e))
         return {
             'statusCode': 500,

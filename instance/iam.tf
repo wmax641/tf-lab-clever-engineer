@@ -18,7 +18,8 @@ resource "aws_iam_role" "lab_instance_role" {
           Effect = "Allow"
           Sid    = "ReadSSMforPrefix${local.uniq_id}"
           Resource = [
-            "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter${local.ssm_param_path}/*"
+            "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter${local.ssm_param_path}/*",
+            "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/${var.base_name}-key"
           ]
         },
         {
@@ -28,12 +29,11 @@ resource "aws_iam_role" "lab_instance_role" {
           Effect = "Allow"
           Sid    = "PutIPSSMforPrefix${local.uniq_id}"
           Resource = [
-            "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter${local.ssm_param_path}/ip"
+            "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter${local.ssm_param_path}/ip",
           ]
         },
         {
           Action = [
-            #    "ec2:DescribeInstances",
             "ec2:ReportInstanceStatus",
           ]
           Effect = "Allow"
