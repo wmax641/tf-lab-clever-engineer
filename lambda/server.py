@@ -114,17 +114,19 @@ def lambda_handler(event, context):
 
     # Try to find instances for  matching_ids_list (instance_id, bool(running or not)
     matching_ids_list = get_instance_ids_for_uniq_id(uniq_id)
+
     if matching_ids_list is None:
         ret["error_msg"] = "Invalid id parameter provided"
+        ret["error_msg"] = "Unhandled server side error"
         return {
-            'statusCode': 400,
+            'statusCode': 500,
             'headers':{"Content-Type": "application/json"},
             'body': json.dumps(ret, indent=3)
         }
     elif len(matching_ids_list) == 0:
-        ret["error_msg"] = "Unhandled server side error"
+        ret["error_msg"] = "Invalid id parameter provided"
         return {
-            'statusCode': 500,
+            'statusCode': 400,
             'headers':{"Content-Type": "application/json"},
             'body': json.dumps(ret, indent=3)
         }

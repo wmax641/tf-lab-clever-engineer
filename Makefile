@@ -1,3 +1,9 @@
+
+IDENTITY=$(shell aws sts get-caller-identity | jq -r '.Arn' | cut -d':' -f5-)
+ACCOUNT=$(shell echo "$(IDENTITY)" | cut -d":" -f1)
+
+$(info $(IDENTITY))
+
 fmtchk:
 	terraform fmt -write=false -diff=true -check=true
 
@@ -7,7 +13,7 @@ fmtfix:
 validate:
 	terraform validate
 
-plan: 
+plan:
 	terraform plan -input=false -out=tfplan
 
 apply:

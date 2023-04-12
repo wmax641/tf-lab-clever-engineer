@@ -9,7 +9,7 @@ variable "common_tags" {
 }
 variable "instance_count" {
   type        = number
-  default     = 0
+  default     = 1
   description = "The number of lab instances. If 0, VPC won't be created to save money"
 }
 
