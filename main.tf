@@ -24,7 +24,7 @@ terraform {
 
 module "lab_instance" {
   source = "./instance"
-  count  = 2
+  count  = 1
 
   base_name   = var.base_name
   common_tags = var.common_tags

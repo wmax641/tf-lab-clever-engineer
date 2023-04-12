@@ -205,10 +205,10 @@ resource "aws_vpc_endpoint" "ssm" {
     dns_record_ip_type = "ipv4"
   }
   private_dns_enabled = true
-  security_group_ids = [aws_security_group.vpc_endpoint_sg.id]
+  security_group_ids  = [aws_security_group.vpc_endpoint_sg.id]
   subnet_ids          = [aws_subnet.subnet_public.id]
-  vpc_endpoint_type = "Interface"
-  tags              = merge({ "Name" = "${var.base_name}-ssm" }, var.common_tags)
+  vpc_endpoint_type   = "Interface"
+  tags                = merge({ "Name" = "${var.base_name}-ssm" }, var.common_tags)
 }
 resource "aws_vpc_endpoint" "ssmmesssages" {
   vpc_id       = aws_vpc.vpc.id
@@ -217,10 +217,10 @@ resource "aws_vpc_endpoint" "ssmmesssages" {
     dns_record_ip_type = "ipv4"
   }
   private_dns_enabled = true
-  security_group_ids = [aws_security_group.vpc_endpoint_sg.id]
+  security_group_ids  = [aws_security_group.vpc_endpoint_sg.id]
   subnet_ids          = [aws_subnet.subnet_public.id]
-  vpc_endpoint_type = "Interface"
-  tags              = merge({ "Name" = "${var.base_name}-ssmmessages" }, var.common_tags)
+  vpc_endpoint_type   = "Interface"
+  tags                = merge({ "Name" = "${var.base_name}-ssmmessages" }, var.common_tags)
 }
 resource "aws_vpc_endpoint" "ec2" {
   vpc_id       = aws_vpc.vpc.id
@@ -229,8 +229,8 @@ resource "aws_vpc_endpoint" "ec2" {
     dns_record_ip_type = "ipv4"
   }
   private_dns_enabled = true
-  security_group_ids = [aws_security_group.vpc_endpoint_sg.id]
+  security_group_ids  = [aws_security_group.vpc_endpoint_sg.id]
   subnet_ids          = [aws_subnet.subnet_public.id]
-  vpc_endpoint_type = "Interface"
-  tags              = merge({ "Name" = "${var.base_name}-ec2" }, var.common_tags)
+  vpc_endpoint_type   = "Interface"
+  tags                = merge({ "Name" = "${var.base_name}-ec2" }, var.common_tags)
 }

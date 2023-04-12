@@ -33,8 +33,8 @@ resource "aws_iam_role" "lab_instance_role" {
         },
         {
           Action = [
-          #    "ec2:DescribeInstances",
-              "ec2:ReportInstanceStatus",
+            #    "ec2:DescribeInstances",
+            "ec2:ReportInstanceStatus",
           ]
           Effect = "Allow"
           Sid    = "EC2Actions${local.uniq_id}"

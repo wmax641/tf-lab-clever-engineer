@@ -10,7 +10,7 @@ resource "random_string" "uniq" {
   special = false
 }
 resource "random_integer" "user_num" {
-  min = 10 
+  min = 10
   max = 99
 }
 
