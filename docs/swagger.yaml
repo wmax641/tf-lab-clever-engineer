@@ -24,6 +24,8 @@ info:
       * There is no need nor expectation to execute technical exploits or run malware
       * There is no need nor expectation to use any AWS services
   version: 0.0.1
+servers:
+  - url: https://clueless.engineer
 tags:
   - name: logs
     description: Logs from a very secure app
