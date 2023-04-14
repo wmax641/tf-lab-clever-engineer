@@ -1,0 +1,113 @@
+openapi: 3.0.3
+info:
+  title: Lab - Clever Engineer
+  description: |-
+  
+    ## Scenario
+    
+    A clever Security Engineer has a requirement to provide system logs via a HTTP API, and they know well enough to protect the sensitive data using __base64__ encryption. Due their tight deadlines, they've published the system logs via an unauthenticated API on the public internet to deliver their project as soon as possible.
+    
+    You are an even more clever Security Engineer who has stumbled on these protected logs, and has noticed a credential leakage issue. You've decided to help out by taking over the administration of the exposed server to <s>use for your own purposes</s> help prevent abuse by would-be hackers.
+    
+    ## Task
+    
+    You will be given the HTTP API endpoint and parameters to request the logs
+      * Find the exposed "__password__" and host details from the logs
+      * Take control over the exposed Linux server, and __lock down user access__ to protect the system from other intruders
+    
+    Explain how you completed the above 2 tasks, exhibiting any code/scripts used.
+    
+    ## Notes / Restrictions
+  
+      * The server is owned and controlled by the interviewer, you have permission to log onto it and secure it.
+      * There is no need nor expectation to install software on the server (it has no internet connectivity)
+      * There is no need nor expectation to execute technical exploits or run malware
+      * There is no need nor expectation to use any AWS services
+  version: 0.0.1
+tags:
+  - name: logs
+    description: Logs from a very secure app
+  - name: server
+    description: Operate on the very secure server
+paths:
+  /logs:
+    get:
+      tags:
+        - logs
+      summary: Get the logs
+      description: |
+        Get logs of the app given an ID parameter
+        
+        By default, returns logs in a JSON structure. An optional __txt__ parameter can be used to return the logs as text/plain
+      parameters:
+        - name: id
+          in: query
+          description: The unique ID for the system
+          required: true
+          schema:
+            type: string
+        - name: txt
+          in: query
+          description: | 
+            Set to "true" to return text/plain. Defaults to "false". 
+            
+            Only returns text format for successful queries
+          schema:
+            type: boolean
+            default: false
+            enum:
+              - false
+              - true
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Failed due to client issue
+        '500':
+          description: Failed due to server issue
+  /server:
+    get:
+      tags:
+        - server
+      summary: Get Server status
+      description: |
+        Get status of a server given an ID parameter
+      parameters:
+        - name: id
+          in: query
+          description: The unique ID for the system
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Failed due to client issue
+        '500':
+          description: Failed due to server issue
+    delete:
+      tags:
+        - server
+      summary: Delete a server to refresh it
+      description: |
+          Delete a server corresponding with an ID parameter. 
+        
+          When a server is deleted, it will be re-deployed after a few minutes and initialised with the same initial config.
+          
+          However, it's public IP address will be different, and this will be reflected in subsequet requests to /logs
+      parameters:
+        - name: id
+          in: query
+          description: The unique ID for the system
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+        '400':
+          description: Failed due to client issue
+        '500':
+          description: Failed due to server issue
+
