@@ -45,7 +45,7 @@ data "aws_iam_policy_document" "read_all_ssm_param_policy_doc" {
   }
 }
 
-data "aws_iam_policy_document" "terminate_instance_ec2_policy_doc" {
+data "aws_iam_policy_document" "ec2_server_policy_doc" {
   statement {
     sid = "DescribeInstanceEC2For${local.sid_suffix}"
     actions = [
@@ -89,9 +89,9 @@ resource "aws_iam_policy" "lambda_cloudwatch_policy" {
   name   = "${var.base_name}-lambda_cloudwatch_policy"
   policy = data.aws_iam_policy_document.lambda_cloudwatch_policy_doc.json
 }
-resource "aws_iam_policy" "terminate_instance_ec2_policy" {
+resource "aws_iam_policy" "ec2_server_policy" {
   name   = "${var.base_name}-termiante-instance-ec2-policy"
-  policy = data.aws_iam_policy_document.terminate_instance_ec2_policy_doc.json
+  policy = data.aws_iam_policy_document.ec2_server_policy_doc.json
 }
 
 resource "aws_iam_role" "lambda_logs_role" {
@@ -110,7 +110,7 @@ resource "aws_iam_role" "lambda_server_role" {
   path               = "/service/"
   assume_role_policy = data.aws_iam_policy_document.lambda_assume_role_policy_doc.json
   managed_policy_arns = [
-    aws_iam_policy.terminate_instance_ec2_policy.arn,
+    aws_iam_policy.ec2_server_policy.arn,
     aws_iam_policy.lambda_cloudwatch_policy.arn,
   ]
   tags = merge({ "Name" = "${var.base_name}-LambdaTerminateInstancesRole" }, var.common_tags)

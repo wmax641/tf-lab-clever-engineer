@@ -186,10 +186,11 @@ def lambda_handler(event, context):
         }
 
     # change to txt output if requested. This only works if the statusCode is already 200
-    if ("txt" in event["queryStringParameters"]):
-        if event["queryStringParameters"]["txt"].lower() == "true":
-            content_type = "text/plain"
-            body = "\n".join(logs) 
+    if ("txt" in event["queryStringParameters"] and 
+        event["queryStringParameters"]["txt"].lower() == "true"):
+
+        content_type = "text/plain"
+        body = "\n".join(logs) 
 
     # otherwise, default json
     else:

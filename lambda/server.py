@@ -37,8 +37,10 @@ def is_ok_datetime_to_delete(uniq_id:str) -> [bool, int]:
 # Get list of instance_ids that correspond to a uniq_id
 # Returns None if unhandled exception, 
 # Returns [] if no instance found with the provided uniq_id tag
-# otherwise returns tuple of (instance_id, true/false depending if its running)
-def get_instance_ids_for_uniq_id(uniq_id:str) -> list[tuple[str, bool]]:
+# otherwise returns tuple of (instance_id, "state")
+# Possible states: 0:pending, 16:running, 32:shutting-down, 48:terminating, 
+#                  64:stopping, 80:stopped
+def get_instance_ids_for_uniq_id(uniq_id:str) -> list[tuple[str, str]]:
     ec2 = boto3.client('ec2')
     ret = []
 
@@ -51,8 +53,7 @@ def get_instance_ids_for_uniq_id(uniq_id:str) -> list[tuple[str, bool]]:
 
         for rezo in r["Reservations"]:
             for instance in rezo["Instances"]:
-                is_running = True if instance["State"]["Code"] == 16 else False
-                ret.append((instance["InstanceId"], is_running))
+                ret.append((instance["InstanceId"], instance["State"]["Name"]))
     except Exception as e:
         print("Unhandled exception at get_instance_ids_for_uniq_id() - {}".format(str(e)))
         return(None)
@@ -62,8 +63,10 @@ def get_instance_ids_for_uniq_id(uniq_id:str) -> list[tuple[str, bool]]:
 
 def delete_instances(matching_ids_list : list[tuple[str, bool]]) -> None:
     ec2 = boto3.client('ec2')
-    for instance_id, is_running in matching_ids_list:
-        if not is_running:
+    for instance_id, status in matching_ids_list:
+        # Possible states: 0:pending, 16:running, 32:shutting-down, 
+        # 48:terminating, 64:stopping, 80:stopped
+        if status != "running":
             continue
         try:
             print("trying to delete {}...".format(instance_id))
@@ -140,31 +143,64 @@ def lambda_handler(event, context):
             'headers':{"Content-Type": "application/json"},
             'body': json.dumps(ret, indent=3)
         }
-    if not is_ok:
-        ret["error_msg"] = "Too soon since last requested termination. Please wait another {} seconds".format(delay)
-        return {
-            'statusCode': 400,
-            'headers':{"Content-Type": "application/json"},
-            'body': json.dumps(ret, indent=3)
-        }
 
+    # Now we Delete or Query depending on HTTP method;
 
-    # now go through each active instance, and terminate. 
-    #Then update datetime parameter for cooldown before next termination request
-    delete_instances(matching_ids_list)
-    update_datetime_param(uniq_id)
+    # GET request
+    # If an instance is in state="running", greedy break
+    # Otherwise, put all the statuses in the set, and take the most relevant
+        # Possible states: 0:pending, 16:running, 32:shutting-down, 
+        # 48:terminating, 64:stopping, 80:stopped
+    # Also return some info on termination delay
+    if event["httpMethod"] == "GET":
+        ret["delete_ok"] = is_ok
+        ret["delete_delay"] = delay
+        status_set = set()
+        for instance_id, status in matching_ids_list:
+            if status == "running":
+                ret["status"] = status
+                break
+            else:
+                status_set.add(status)
 
-    ret["error"] = False
-    ret["msg"] = "Termination of server initiated. After a few minutes, the sever will be re-deployed and reset to initial settings. However, its public IP address will be different"
+        if "pending" in status_set:
+            ret["status"] = "pending"
+        elif "shutting-down" in status_set:
+            ret["status"] = "shutting-down"
+        elif "terminated" in status_set:
+            ret["status"] = "terminated"
+        elif "stopping" in status_set:
+            ret["status"] = "stopping"
+        elif "stopped" in status_set:
+            ret["status"] = "stopped"
+            
+    # DELETE request
+    else:
+        if not is_ok:
+            ret["error_msg"] = "Too soon since last requested termination. Please wait another {} seconds".format(delay)
+            return {
+                'statusCode': 400,
+                'headers':{"Content-Type": "application/json"},
+                'body': json.dumps(ret, indent=3)
+            }
+
+        # go through each active instance, and terminate. 
+        #Then update datetime parameter for cooldown before next termination request
+        delete_instances(matching_ids_list)
+        update_datetime_param(uniq_id)
+
+        ret["error"] = False
+        ret["msg"] = "Termination of server initiated. After a few minutes, the sever will be re-deployed and reset to initial settings. However, its public IP address will be different"
+
+    # Finally if we make it here, everything was okay
     return {
           'statusCode': 200,
           'headers':{"Content-Type": "application/json"},
           'body': json.dumps(ret, indent=3)
     }
-    
 
 if __name__ == "__main__":
-    uniq_id = "b2a9ef1nwplxmgz6"
+    uniq_id = "myqs3boef5zpthgm"
     matching_ids_list = get_instance_ids_for_uniq_id(uniq_id)
     for i in matching_ids_list:
         print(i)

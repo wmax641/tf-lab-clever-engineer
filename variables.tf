@@ -1,6 +1,6 @@
 variable "base_name" {
   type    = string
-  default = "lab-clever-engineer"
+  default = "lab-clueless-engineer"
 }
 variable "common_tags" {
   default = {

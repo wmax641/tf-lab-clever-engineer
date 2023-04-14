@@ -182,9 +182,15 @@ resource "aws_apigatewayv2_route" "logs" {
 
   target = "integrations/${aws_apigatewayv2_integration.logs.id}"
 }
-resource "aws_apigatewayv2_route" "server" {
+resource "aws_apigatewayv2_route" "server_delete" {
   api_id    = aws_apigatewayv2_api.api_gateway.id
   route_key = "DELETE /server"
+
+  target = "integrations/${aws_apigatewayv2_integration.server.id}"
+}
+resource "aws_apigatewayv2_route" "server_get" {
+  api_id    = aws_apigatewayv2_api.api_gateway.id
+  route_key = "GET /server"
 
   target = "integrations/${aws_apigatewayv2_integration.server.id}"
 }
@@ -204,7 +210,7 @@ resource "aws_apigatewayv2_integration" "server" {
   integration_type = "AWS_PROXY"
 
   connection_type      = "INTERNET"
-  description          = "DELETE server Lambda"
+  description          = "DELETE or GET server Lambda"
   integration_method   = "POST"
   integration_uri      = aws_lambda_function.server.invoke_arn
   passthrough_behavior = "WHEN_NO_MATCH"
@@ -219,6 +225,7 @@ resource "aws_apigatewayv2_deployment" "deployment" {
   }
   depends_on = [
     aws_apigatewayv2_route.logs,
+    aws_apigatewayv2_route.server_delete,
   ]
 }
 resource "aws_apigatewayv2_stage" "v1" {
