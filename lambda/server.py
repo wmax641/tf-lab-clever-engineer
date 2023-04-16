@@ -12,7 +12,7 @@ _SECONDS_BETWEEN_INSTANCE_TERMINATION = 300
 # Check the stored ssm param to see if it's been sufficient delay since last deletion
 # Returns (bool, int) if okay or not, and if not okay, the number of seconds to wait
 # Returns (None, None) on unhandled exception
-def is_ok_datetime_to_delete(uniq_id:str) -> [bool, int]:
+def is_ok_to_del_datetime_to_delete(uniq_id:str) -> [bool, int]:
 
     ssm = boto3.client('ssm')
     param_path = "{}-{}/terminated-datetime".format(os.environ['base_param_path'], uniq_id)
@@ -20,10 +20,10 @@ def is_ok_datetime_to_delete(uniq_id:str) -> [bool, int]:
         last_dt_unix = ssm.get_parameter(Name=param_path)["Parameter"]["Value"]
         dt_last = datetime.fromtimestamp(int(last_dt_unix))
     except (KeyError, ssm.exceptions.ParameterNotFound) as e:
-        print("KeyError exception at is_ok_datetime_to_delete() - {}".format(str(e)))
+        print("KeyError exception at is_ok_to_del_datetime_to_delete() - {}".format(str(e)))
         return((None,None))
     except Exception as e:
-        print("Unhandled exception at is_ok_datetime_to_delete() - {}".format(str(e)))
+        print("Unhandled exception at is_ok_to_del_datetime_to_delete() - {}".format(str(e)))
         return((None,None))
 
     now = datetime.now()
@@ -66,10 +66,10 @@ def delete_instances(matching_ids_list : list[tuple[str, bool]]) -> None:
     for instance_id, status in matching_ids_list:
         # Possible states: 0:pending, 16:running, 32:shutting-down, 
         # 48:terminating, 64:stopping, 80:stopped
-        if status != "running":
+        if status not in {"running", "stopping", "stopped", "shutting-down"}:
             continue
         try:
-            print("trying to delete {}...".format(instance_id))
+            print("trying to delete {} (status: {})...".format(instance_id, status))
             ec2.terminate_instances( InstanceIds=[instance_id])
         except Exception as e:
             print("Unhandled exception at delete_instances() deleting {} - {}".format(instance_id, str(e)))
@@ -135,8 +135,8 @@ def lambda_handler(event, context):
         }
 
     # Check the stored ssm param to see if it's been sufficient delay since last deletion
-    is_ok, delay = is_ok_datetime_to_delete(uniq_id)
-    if is_ok is None:
+    is_ok_to_del, delay = is_ok_to_del_datetime_to_delete(uniq_id)
+    if is_ok_to_del is None:
         ret["error_msg"] = "Unhandled server side error"
         return {
             'statusCode': 500,
@@ -153,7 +153,8 @@ def lambda_handler(event, context):
         # 48:terminating, 64:stopping, 80:stopped
     # Also return some info on termination delay
     if event["httpMethod"] == "GET":
-        ret["delete_ok"] = is_ok
+        ret["error"] = False
+        ret["delete_ok"] = is_ok_to_del
         ret["delete_delay"] = delay
         status_set = set()
         for instance_id, status in matching_ids_list:
@@ -176,7 +177,7 @@ def lambda_handler(event, context):
             
     # DELETE request
     else:
-        if not is_ok:
+        if not is_ok_to_del:
             ret["error_msg"] = "Too soon since last requested termination. Please wait another {} seconds".format(delay)
             return {
                 'statusCode': 400,
@@ -204,8 +205,8 @@ if __name__ == "__main__":
     matching_ids_list = get_instance_ids_for_uniq_id(uniq_id)
     for i in matching_ids_list:
         print(i)
-    #print(is_ok_datetime_to_delete(uniq_id))
+    #print(is_ok_to_del_datetime_to_delete(uniq_id))
     #delete_instances(matching_ids_list)
     #update_datetime_param(uniq_id)
-    #print(is_ok_datetime_to_delete(uniq_id))
+    #print(is_ok_to_del_datetime_to_delete(uniq_id))
 

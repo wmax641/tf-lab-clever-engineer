@@ -10,16 +10,10 @@
     <link rel="icon" type="image/png" href="dist/favicon-16x16.png" sizes="16x16" />
   </head>
   <style>
-    .swagger-ui .topbar {
-        display: none;
-    }
-    .swagger-ui .info hgroup.main a {
-        display: none;
-    }
     .swagger-ui .swagger-ui {
-        max-width: 1000px;
-        min-width: 600px;
-        width: 50%;
+        max-width: 1200px;
+        min-width: 700px;
+        width: 70%;
         margin: 0 auto;
     }
     .swagger-ui .renderedMarkdown p {
@@ -30,6 +24,18 @@
     }
     .swagger-ui .info h1, .swagger-ui .info h2, .swagger-ui .info h3, .swagger-ui .info h4, .swagger-ui .info h5 {
         font-size: calc(100% + 0.5vw);
+    }
+    .swagger-ui a.nostyle, .swagger-ui a.nostyle:visited {
+        font-size: calc(100% + 0.2vw);
+    }
+    .swagger-ui .topbar {
+        display: none;
+    }
+    .swagger-ui .info hgroup.main a {
+        display: none;
+    }
+    input, select:not(.content-type){
+        display: none;
     }
     span a {
         display: none;
@@ -48,3 +54,4 @@
     <script src="dist/swagger-initializer.js" charset="UTF-8"> </script>
   </body>
 </html>
+

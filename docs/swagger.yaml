@@ -5,7 +5,7 @@ info:
   
     ## Scenario
     
-    A clever Security Engineer has a requirement to provide system logs via a HTTP API, and they know well enough to protect the sensitive data using __base64__ encryption. Due their tight deadlines, they've published the system logs via an unauthenticated API on the public internet to deliver their project as soon as possible.
+    A clever Security Engineer is under pressure to deliver an upcoming deadline to provide system logs via a HTTP API. To meet these requirements in time, they've simply published the unauthenticated API onto the public internet, but they knew well enough to manage that risk by protecting the sensitive data using __base64__ encryption.
     
     You are an even more clever Security Engineer who has stumbled on these protected logs, and has noticed a credential leakage issue. You've decided to help out by taking over the administration of the exposed server to <s>use for your own purposes</s> help prevent abuse by would-be hackers.
     
@@ -13,14 +13,16 @@ info:
     
     You will be given the HTTP API endpoint and parameters to request the logs
       * Find the exposed "__password__" and host details from the logs
+      
       * Take control over the exposed Linux server, and __lock down user access__ to protect the system from other intruders
     
     Explain how you completed the above 2 tasks, exhibiting any code/scripts used.
     
-    ## Notes / Restrictions
+    ## Notes
   
       * The server is owned and controlled by the interviewer, you have permission to log onto it and secure it.
-      * There is no need nor expectation to install software on the server (it has no internet connectivity)
+      * There is no need nor expectation to install software on the server _(server has no internet connectivity)_
+      
       * There is no need nor expectation to execute technical exploits or run malware
       * There is no need nor expectation to use any AWS services
   version: 0.0.1
@@ -51,7 +53,9 @@ paths:
         - name: txt
           in: query
           description: | 
-            Set to "true" to return text/plain. Defaults to "false". 
+            Set to "true" to return logs in simple text format. 
+            
+            Defaults to "false" which will return the logs in JSON. 
             
             Only returns text format for successful queries
           schema:
@@ -63,6 +67,31 @@ paths:
       responses:
         '200':
           description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: boolean
+                    description: if error occurred
+                    example: false
+                  id:
+                    type: string
+                    description: unique id for system
+                    example: "abcdef1234567890"
+                  logs:
+                    type: array
+                    items:
+                      type: string
+                      example: 
+                        "<logs>"
+            text/plain:
+              schema:
+                type: string
+                example: | 
+                  <logs>
+                  <logs>
         '400':
           description: Failed due to client issue
         '500':
@@ -73,7 +102,9 @@ paths:
         - server
       summary: Get Server status
       description: |
-        Get status of a server given an ID parameter
+        Get the status of a server given an ID parameter
+
+        Also returns whether or not the server can currently be deleted, and the delay until deletion is permitted.
       parameters:
         - name: id
           in: query
@@ -84,6 +115,31 @@ paths:
       responses:
         '200':
           description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: boolean
+                    description: if error occurred
+                    example: false
+                  id:
+                    type: string
+                    description: unique id for system
+                    example: "abcdef1234567890"
+                  delete_ok:
+                    type: boolean
+                    description: if the DELETE request is permitted
+                    example: true
+                  delete_delay:
+                    type: integer
+                    description: Number of seconds before the DELETE request becomes available again
+                    example: 0
+                  status:
+                    type: string
+                    description: The current status of the server
+                    example: "running"
         '400':
           description: Failed due to client issue
         '500':
@@ -93,11 +149,13 @@ paths:
         - server
       summary: Delete a server to refresh it
       description: |
-          Delete a server corresponding with an ID parameter. 
+          Delete a server corresponding with the provided ID parameter. 
         
           When a server is deleted, it will be re-deployed after a few minutes and initialised with the same initial config.
           
           However, it's public IP address will be different, and this will be reflected in subsequet requests to /logs
+
+          DELETE request is rate limited. Use the GET request to see the server's current status, and delay between deletions.
       parameters:
         - name: id
           in: query

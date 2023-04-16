@@ -297,11 +297,3 @@ resource "aws_vpc_endpoint" "ec2" {
 }
 
 
-# # # # # PARAMETERS # # # # #
-
-resource "aws_ssm_parameter" "key" {
-  name  = "${var.base_name}-key"
-  type  = "String"
-  value = var.key
-  tags  = var.common_tags
-}
