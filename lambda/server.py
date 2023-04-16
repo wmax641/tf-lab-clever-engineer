@@ -147,8 +147,7 @@ def lambda_handler(event, context):
     # Now we Delete or Query depending on HTTP method;
 
     # GET request
-    # If an instance is in state="running", greedy break
-    # Otherwise, put all the statuses in the set, and take the most relevant
+    # Put all the statuses of all instances in the set, and take the most relevant
         # Possible states: 0:pending, 16:running, 32:shutting-down, 
         # 48:terminating, 64:stopping, 80:stopped
     # Also return some info on termination delay
@@ -158,13 +157,11 @@ def lambda_handler(event, context):
         ret["delete_delay"] = delay
         status_set = set()
         for instance_id, status in matching_ids_list:
-            if status == "running":
-                ret["status"] = status
-                break
-            else:
-                status_set.add(status)
+            status_set.add(status)
 
-        if "pending" in status_set:
+        if "running" in status_set:
+            ret["status"] = "running"
+        elif "pending" in status_set:
             ret["status"] = "pending"
         elif "shutting-down" in status_set:
             ret["status"] = "shutting-down"
@@ -201,7 +198,7 @@ def lambda_handler(event, context):
     }
 
 if __name__ == "__main__":
-    uniq_id = "myqs3boef5zpthgm"
+    uniq_id = "v1k7txx1qv3pxze0"
     matching_ids_list = get_instance_ids_for_uniq_id(uniq_id)
     for i in matching_ids_list:
         print(i)

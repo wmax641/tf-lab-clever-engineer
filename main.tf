@@ -4,8 +4,11 @@ provider "aws" {
 provider "archive" {}
 
 terraform {
-  backend "local" {
+  #backend "local" {
+  #}
+  backend "s3" {
   }
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"
