@@ -7,7 +7,7 @@ from datetime import timedelta
 import json
 import os
 
-_SECONDS_BETWEEN_INSTANCE_TERMINATION = 600
+_SECONDS_BETWEEN_INSTANCE_TERMINATION = 900
 
 # Check the stored ssm param to see if it's been sufficient delay since last deletion
 # Returns (bool, int) if okay or not, and if not okay, the number of seconds to wait
