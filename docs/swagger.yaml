@@ -20,7 +20,7 @@ info:
     
     ## Notes
   
-      * The server is owned and controlled by the interviewer, you have permission to log onto it and secure it.
+      * The server is owned and controlled by the interviewer, you have permission to log onto it to complete the tasks
       * There is no need nor expectation to install software on the server _(server has no internet connectivity)_
       
       * There is no need nor expectation to execute technical exploits or run malware
@@ -32,7 +32,7 @@ tags:
   - name: logs
     description: Logs from a very secure app
   - name: server
-    description: Operate on the very secure server
+    description: Operate on a very secure server
 paths:
   /logs:
     get:
