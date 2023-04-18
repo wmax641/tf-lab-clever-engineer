@@ -22,4 +22,4 @@ echo "$USERNAME:$PASSWORD" | chpasswd
 
 sleep 1
 
-#rm /usr/bin/ec2-metadata
+rm /usr/bin/ec2-metadata
