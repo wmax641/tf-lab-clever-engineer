@@ -4,8 +4,6 @@ provider "aws" {
 provider "archive" {}
 
 terraform {
-  #backend "local" {
-  #}
   backend "s3" {
   }
 

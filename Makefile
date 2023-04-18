@@ -20,14 +20,11 @@ validate:
 	terraform validate
 
 plan:
-	terraform plan -input=false -out=tfplan 
+	terraform plan -input=false -out=tfplan-${ACCOUNT}
 
 apply:
-	terraform apply -input=false tfplan 
+	terraform apply -input=false tfplan-${ACCOUNT}
 
 destroy:
-	terraform plan -destroy -input=false -out=tfplan
-	terraform apply -input=false tfplan \
-		-backend-config="bucket=tf-${ACCOUNT}" \
-		-backend-config="key=${BASE_NAME}" \
-		-backend-config="region=${REGION}" 
+	terraform plan -destroy -input=false -out=tfplan-${ACCOUNT}
+	terraform apply -input=false tfplan-${ACCOUNT}
