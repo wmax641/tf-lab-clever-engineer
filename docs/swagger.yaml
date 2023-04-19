@@ -22,9 +22,9 @@ info:
   
       * The server is owned and controlled by the interviewer, you have permission to log onto it to complete the tasks
       * There is no need nor expectation to install software on the server _(server has no internet connectivity)_
-      
       * There is no need nor expectation to execute technical exploits or run malware
       * There is no need nor expectation to use any AWS services
+      * There is no need nor expectation to perform any lateral movement from the server
   version: 0.0.1
 servers:
   - url: https://clueless.engineer
