@@ -55,29 +55,15 @@ resource "aws_security_group" "instance_sg" {
 
   ingress {
     description = "inbound ssh"
-    from_port   = 22
+    from_port   = 1 
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
   ingress {
-    description = "inbound http"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  ingress {
-    description = "inbound https"
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  ingress {
     description = "inbound 1337"
-    from_port   = 1337
-    to_port     = 1337
+    from_port   = 200 
+    to_port     = 1000
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -88,13 +74,6 @@ resource "aws_security_group" "instance_sg" {
     protocol    = "-1"
     cidr_blocks = [var.cidr_block]
   }
-  #egress {
-  #  description = "outbound everywhere"
-  #  from_port   = 0
-  #  to_port     = 0
-  #  protocol    = "-1"
-  #  cidr_blocks = ["0.0.0.0/0"]
-  #}
   tags = merge({ "Name" = "${var.base_name}-sg" }, var.common_tags)
 }
 

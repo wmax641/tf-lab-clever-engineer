@@ -9,6 +9,34 @@
     <link rel="icon" type="image/png" href="dist/icon.png"/>
   </head>
   <style>
+    span#clever:after {
+        color: #666;
+        content: "clever";
+        padding-left: 0.75em;
+        padding-right: 0.75em;
+    }
+    span#clever:hover:after {
+        color: #b22;
+        content: "clueless";
+        font-weight: 600;
+        padding: 0em;
+        animation: shake 1.0s;
+        animation-iteration-count: infinite;
+        display: inline-block
+    }
+    @keyframes shake {
+      0% { transform: translate(1px, 1px) rotate(0deg); }
+      10% { transform: translate(-1px, -2px) rotate(-1deg); }
+      20% { transform: translate(-2px, 0px) rotate(1deg); }
+      30% { transform: translate(2px, 2px) rotate(0deg); }
+      40% { transform: translate(1px, -1px) rotate(1deg); }
+      50% { transform: translate(-1px, 2px) rotate(-1deg); }
+      60% { transform: translate(-2px, 1px) rotate(0deg); }
+      70% { transform: translate(2px, 1px) rotate(-1deg); }
+      80% { transform: translate(-1px, -1px) rotate(1deg); }
+      90% { transform: translate(1px, 2px) rotate(0deg); }
+      100% { transform: translate(1px, -2px) rotate(-1deg); }
+    }
     .swagger-ui .swagger-ui {
         max-width: 1200px;
         min-width: 700px;

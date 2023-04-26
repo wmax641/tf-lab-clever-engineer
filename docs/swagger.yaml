@@ -5,7 +5,7 @@ info:
   
     ## Scenario
     
-    A <s>clueless</s> clever Security Engineer is under pressure to deliver an upcoming deadline to provide system logs via a HTTP API. To meet these requirements in time, they've simply published the unauthenticated API onto the public internet, but they knew well enough to manage that risk by protecting the sensitive data using __base64__ encryption.
+    A <span id="clever"></span></span> Security Engineer is under pressure to deliver an upcoming deadline to provide system logs via a HTTP API. To meet these requirements in time, they implemented an unauthenticated API on the public internet. However, they knew well enough to manage that risk by protecting the sensitive data using __base64__ encryption.
     
     You are an even more clever Security Engineer who has stumbled on these protected logs, and has noticed a credential leakage issue. You've decided to help out by taking over the administration of the exposed server to help prevent abuse by would-be hackers.
     
@@ -16,11 +16,11 @@ info:
       
       * Take control over the exposed Linux server, and __lock down user access__ to protect the system from other intruders
     
-    __Explain__ and __demonstrate__ how you completed the above 2 tasks, exhibiting any code/scripts used.
+    You will be asked to demonstrate how you completed the above 2 tasks, exhibiting any code/scripts used. You'll also be asked a number of follow up questions regarding the lab.
     
     ## Notes
   
-      * The server is owned and controlled by the interviewer, you have permission to log onto it, and do anything you think is appropriate to complete the tasks
+      * The server is owned and controlled by the interviewer, you have permission to log onto it, and __do anything__ you think is appropriate to complete the tasks
 
       * There is no need nor expectation to install software on the server _(server has no internet connectivity)_
 
