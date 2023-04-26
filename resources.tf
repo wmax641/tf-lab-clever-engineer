@@ -224,10 +224,25 @@ resource "aws_apigatewayv2_deployment" "deployment" {
   ]
 }
 resource "aws_apigatewayv2_stage" "v1" {
-  api_id        = aws_apigatewayv2_api.api_gateway.id
-  name          = "v1"
-  auto_deploy   = true
-  deployment_id = aws_apigatewayv2_deployment.deployment.id
+  api_id      = aws_apigatewayv2_api.api_gateway.id
+  name        = "v1"
+  auto_deploy = true
+  #deployment_id = aws_apigatewayv2_deployment.deployment.id
+  access_log_settings {
+    destination_arn = aws_cloudwatch_log_group.apigateway.arn
+    format = jsonencode(
+      {
+        httpMethod     = "$context.httpMethod"
+        ip             = "$context.identity.sourceIp"
+        protocol       = "$context.protocol"
+        requestId      = "$context.requestId"
+        requestTime    = "$context.requestTime"
+        responseLength = "$context.responseLength"
+        routeKey       = "$context.routeKey"
+        status         = "$context.status"
+      }
+    )
+  }
 }
 
 resource "aws_lambda_permission" "lambda_permission_logs" {
@@ -245,6 +260,14 @@ resource "aws_lambda_permission" "lambda_permission_server" {
   principal     = "apigateway.amazonaws.com"
 
   source_arn = "${aws_apigatewayv2_api.api_gateway.execution_arn}/*"
+}
+
+
+# # # # # CloudWatch Log group for API gateway # # # # #
+resource "aws_cloudwatch_log_group" "apigateway" {
+  name              = "/aws/apigatewayv2/${var.base_name}"
+  retention_in_days = 14
+  tags              = var.common_tags
 }
 
 # # # # # VPC ENDPOINTS # # # # #
