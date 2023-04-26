@@ -131,8 +131,8 @@ paths:
                   id:
                     type: string
                     description: unique id for system
-                    example: "abcdef1234567890"
-                  delete_ok:
+                    example: "xxxxxxxxxxxxxxxx"
+                  delete_possible:
                     type: boolean
                     description: if the DELETE request is permitted
                     example: true

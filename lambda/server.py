@@ -94,7 +94,6 @@ def lambda_handler(event, context):
     # ensure id parameter is provided, otherwise quick exit
     try:
         uniq_id = event["queryStringParameters"]["id"]
-        print('PARAMETER["id"] = {}'.format(uniq_id[:50]))
 
         if len(uniq_id) < 5 or len(uniq_id) > 30:
             raise(KeyError)
@@ -116,6 +115,18 @@ def lambda_handler(event, context):
             'headers':{"Content-Type": "application/json"},
             'body': json.dumps(ret, indent=3)
         }
+
+    # Print Debug logs
+    try:
+        print("DEBUG: Parameters: {}".format(event["queryStringParameters"]))
+    except:
+        pass
+    try:
+        ua = event["requestContext"]["identity"]["userAgent"]
+        ip = event["requestContext"]["identity"]["sourceIp"]
+        print("DEBUG: Requestor: 'src_ip': '{}', 'ua': '{}'".format(ip, ua))
+    except:
+        pass
 
     # Try to find instances for  matching_ids_list (instance_id, bool(running or not)
     matching_ids_list = get_instance_ids_for_uniq_id(uniq_id)
@@ -155,7 +166,7 @@ def lambda_handler(event, context):
     # Also return some info on termination delay
     if event["httpMethod"] == "GET":
         ret["error"] = False
-        ret["delete_ok"] = is_ok_to_del
+        ret["delete_possible"] = is_ok_to_del
         ret["delete_delay"] = delay
         status_set = set()
         for instance_id, status in matching_ids_list:
@@ -174,13 +185,17 @@ def lambda_handler(event, context):
         elif "stopped" in status_set:
             ret["status"] = "stopped"
             
-    # DELETE request else: if not is_ok_to_del: ret["error_msg"] = "Too soon since last requested termination. Please wait another {} seconds".format(delay)
+
+    # DELETE request 
+    else: 
+        if not is_ok_to_del: 
+            ret["error"] = True
+            ret["error_msg"] = "Can't delete yet. Please wait another {} seconds".format(delay)
             return {
                 'statusCode': 400,
                 'headers':{"Content-Type": "application/json"},
                 'body': json.dumps(ret, indent=3)
             }
-
         # go through each active instance, and terminate. 
         #Then update datetime parameter for cooldown before next termination request
         delete_instances(matching_ids_list)

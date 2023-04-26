@@ -110,8 +110,6 @@ def gen_logs(host:str, username:str, password:str, port:str) -> list[str]:
 
 def lambda_handler(event, context):
 
-    print(event)
-
     # Set some default values
     logs = []
     statusCode = 500
@@ -128,7 +126,7 @@ def lambda_handler(event, context):
     # ensure id parameter exists, otherwise quick exit
     try:
         uniq_id = event["queryStringParameters"]["id"]
-        print('PARAMETER["id"] = {}'.format(uniq_id[:50]))
+
         if len(uniq_id) < 5 or len(uniq_id) > 30:
             raise(KeyError)
         ret["id"] = uniq_id
@@ -150,6 +148,17 @@ def lambda_handler(event, context):
             'body': json.dumps(ret, indent=3)
         }
 
+    # Print Debug logs
+    try:
+        print("DEBUG: Parameters: {}".format(event["queryStringParameters"]))
+    except:
+        pass
+    try:
+        ua = event["requestContext"]["identity"]["userAgent"]
+        ip = event["requestContext"]["identity"]["sourceIp"]
+        print("DEBUG: Requestor: 'src_ip': '{}', 'ua': '{}'".format(ip, ua))
+    except:
+        pass
     
     try:
         # Pull values out of SSM param store
