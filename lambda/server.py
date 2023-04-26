@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-# Lambda function to delete the lab instance corresponding to the provided [id] param
+# Lambda function to operate on server
+# get status or delete the lab instance corresponding to the provided [id] param
 
 import boto3
 from datetime import datetime
@@ -15,10 +16,11 @@ _SECONDS_BETWEEN_INSTANCE_TERMINATION = 900
 def is_ok_to_del_datetime_to_delete(uniq_id:str) -> [bool, int]:
 
     ssm = boto3.client('ssm')
-    param_path = "{}-{}/terminated-datetime".format(os.environ['base_param_path'], uniq_id)
+    dt_param_path = "{}-{}/terminated-datetime".format(os.environ['base_param_path'], uniq_id)
     try:
-        last_dt_unix = ssm.get_parameter(Name=param_path)["Parameter"]["Value"]
-        dt_last = datetime.fromtimestamp(int(last_dt_unix))
+        #last_dt_unix = ssm.get_parameter(Name=param_path)["Parameter"]["Value"]
+        #dt_last = datetime.fromtimestamp(int(last_dt_unix))
+        dt_last_unixtime = int(ssm.get_parameter(Name=dt_param_path)["Parameter"]["Value"])
     except (KeyError, ssm.exceptions.ParameterNotFound) as e:
         print("KeyError exception at is_ok_to_del_datetime_to_delete() - {}".format(str(e)))
         return((None,None))
@@ -26,13 +28,13 @@ def is_ok_to_del_datetime_to_delete(uniq_id:str) -> [bool, int]:
         print("Unhandled exception at is_ok_to_del_datetime_to_delete() - {}".format(str(e)))
         return((None,None))
 
-    now = datetime.now()
-    delta = now - dt_last
+    now_unixtime = int(datetime.now().timestamp())
+    delta_seconds = now_unixtime - dt_last_unixtime
 
-    if delta.total_seconds() > _SECONDS_BETWEEN_INSTANCE_TERMINATION:
+    if delta_seconds > _SECONDS_BETWEEN_INSTANCE_TERMINATION:
         return((True, 0))
     else:
-        return((False, int(_SECONDS_BETWEEN_INSTANCE_TERMINATION - delta.total_seconds())))
+        return((False, _SECONDS_BETWEEN_INSTANCE_TERMINATION - delta_seconds))
 
 # Get list of instance_ids that correspond to a uniq_id
 # Returns None if unhandled exception, 
@@ -78,10 +80,10 @@ def delete_instances(matching_ids_list : list[tuple[str, bool]]) -> None:
 def update_datetime_param(uniq_id : str) -> None:
     ssm = boto3.client('ssm')
     param_path = "{}-{}/terminated-datetime".format(os.environ['base_param_path'], uniq_id)
-    now_unix = int(datetime.now().timestamp())
-    print("Setting param {} to{}".format(param_path, now_unix))
+    now_unixtime = int(datetime.now().timestamp())
+    print("Setting param {} to{}".format(param_path, now_unixtime))
     try:
-        ssm.put_parameter(Name=param_path, Value=str(now_unix), Overwrite=True)
+        ssm.put_parameter(Name=param_path, Value=str(now_unixtime), Overwrite=True)
     except Exception as e:
         print("Unhandled exception at update_datetime_param() - {}".format(str(e)))
     
@@ -172,10 +174,7 @@ def lambda_handler(event, context):
         elif "stopped" in status_set:
             ret["status"] = "stopped"
             
-    # DELETE request
-    else:
-        if not is_ok_to_del:
-            ret["error_msg"] = "Too soon since last requested termination. Please wait another {} seconds".format(delay)
+    # DELETE request else: if not is_ok_to_del: ret["error_msg"] = "Too soon since last requested termination. Please wait another {} seconds".format(delay)
             return {
                 'statusCode': 400,
                 'headers':{"Content-Type": "application/json"},
@@ -197,12 +196,15 @@ def lambda_handler(event, context):
           'body': json.dumps(ret, indent=3)
     }
 
+# for testing
 if __name__ == "__main__":
-    uniq_id = "v1k7txx1qv3pxze0"
+    # need to set environment variables "uniq_id" and "base_param_path"
+    uniq_id = os.environ['uniq_id']
+
     matching_ids_list = get_instance_ids_for_uniq_id(uniq_id)
     for i in matching_ids_list:
         print(i)
-    #print(is_ok_to_del_datetime_to_delete(uniq_id))
+    print(is_ok_to_del_datetime_to_delete(uniq_id))
     #delete_instances(matching_ids_list)
     #update_datetime_param(uniq_id)
     #print(is_ok_to_del_datetime_to_delete(uniq_id))
