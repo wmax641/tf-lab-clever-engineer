@@ -10,11 +10,8 @@ init:
 		-backend-config="key=${BASE_NAME}" \
 		-backend-config="region=${REGION}" 
 
-fmtchk:
+fmt:
 	terraform fmt -write=false -diff=true -check=true
-
-fmtfix:
-	terraform fmt -write=true --recursive
 
 validate:
 	terraform validate
